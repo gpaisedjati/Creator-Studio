@@ -326,7 +326,25 @@ Ensure the content matches the specific episode requested, but within the broade
 
   } catch (error: any) {
     console.error("AI Generation Error:", error);
-    res.status(500).json({ error: error.message || "Failed to generate episode" });
+    let errorMessage = "Gagal menghasilkan episode. Silakan coba lagi.";
+    if (error.message && error.message.includes('429')) {
+      errorMessage = "Batas penggunaan API AI tercapai (Rate Limit). Silakan tunggu sekitar 1-2 menit sebelum mencoba lagi.";
+    } else if (error.message) {
+      // Avoid showing raw JSON errors
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed.error && parsed.error.message) {
+           if (parsed.error.message.includes('quota') || parsed.error.code === 429) {
+             errorMessage = "Batas penggunaan API AI tercapai (Rate Limit). Silakan tunggu sekitar 1-2 menit sebelum mencoba lagi.";
+           } else {
+             errorMessage = parsed.error.message;
+           }
+        }
+      } catch (e) {
+        errorMessage = error.message;
+      }
+    }
+    res.status(500).json({ error: errorMessage });
   }
 });
 
